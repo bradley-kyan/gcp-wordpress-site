@@ -1,6 +1,6 @@
 # GCP-Site
 
-This repo is designed to utilize the free compute VM that the GCP free tier offers. Following the instructions below create a VM in which HestiaCP can be installed. The infrastructure does not implement any features that would add unecessary cost. Some costs cannot be avoided such as Egrees/Ingress data to/from the VM (assuming free tier limits are exceeded).
+This repo is designed to utilize the free compute VM that the GCP free tier offers. Following the instructions below create a VM in which HestiaCP can be installed. The infrastructure does not implement any features that would add unnecessary cost. Some costs cannot be avoided such as Egress/Ingress data to/from the VM (assuming free tier limits are exceeded).
 
 ## Requirements
 * Terraform (latest)
