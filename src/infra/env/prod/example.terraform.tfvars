@@ -1,0 +1,5 @@
+project_id        = "1235436763117"
+region            = "us-west1"
+namecheap_user    = "username"
+namecheap_api_key = "123abc456def7890ghijk1234567890"
+website_domain    = "username.com"
