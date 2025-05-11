@@ -29,7 +29,7 @@ Since we are using the VM as the nameserver we cannot use Namecheap's basic DNS,
 10. In `terragrunt.hcl` change the project value to be your project ID. *Note: That is my project ID but unless you are part of my org, it means nothing to you.*
 11. Run `terragrunt init` to setup the state backend to GCP Storage. Accept any changes
 12. Run `terragrunt plan` to see the proposed changes to your GCP infra.
-13. Run `terragrunt apply` and optionally add the flag `--auto-approve` to skip all conformation dialogues.
+13. Run `terragrunt apply` and optionally add the flag `--auto-approve` to skip all confirmation dialogues.
 14. Once create login into the Google Cloud Web Console and goto your project and navigate to the VM instance. `Compute Engine > VM Instances`. The name of the VM should be **wordpress-server**. Click on SSH to open a web based SSH cli session.
 15. Run `sudo su -`, then run the command `bash hcp-init-installer.sh`. This will download and setup HestiaCP to the VM. This can take up to 20 minutes to fully complete which it is not run as a startup script. The VM will restart when finished.
 16. After installing, copy the external IP under Network Interfaces. Copy this into the web browser with the port number 8083 e.g. `192.168.1.1:8083`. Login with your namecheap's username (this is the default but can be changed in the startup script). The password is pushed to the Secret Manager under the name `heastiacp_password`. This can be found under `Security > Secret Manager` in the Console.
