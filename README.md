@@ -16,7 +16,7 @@ Since we are using the VM as the nameserver we cannot use Namecheap's basic DNS,
 
 ## Setup
 
-1. To set up the project simpily CD into the `src/infra/env/prod` directory.
+1. To set up the project simply CD into the `src/infra/env/prod` directory.
 2. Install the Google Cloud CLI. The easiest way is to install the tool as a snap package with the command `snap install google-cloud-cli --classic`
 3. Create a Google Cloud account with an existing Google Account. You will need to add payment information.
 4. Run the cli command `gcloud init`
