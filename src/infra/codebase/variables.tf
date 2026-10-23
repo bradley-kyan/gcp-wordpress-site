@@ -37,6 +37,11 @@ variable "cloudflare_account_id" {
 }
 
 variable "owner_email" {
-  description = "Only address allowed through Cloudflare Access; destination for forwarded mail."
+  description = "Destination for forwarded mail."
+  type        = string
+}
+
+variable "admin_email" {
+  description = "Cloudflare account email allowed through Cloudflare Access."
   type        = string
 }

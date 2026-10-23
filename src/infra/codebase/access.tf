@@ -13,7 +13,7 @@ resource "cloudflare_zero_trust_access_policy" "owner" {
   account_id = var.cloudflare_account_id
   name       = "owner"
   decision   = "allow"
-  include    = [{ email = { email = var.owner_email } }]
+  include    = [{ email = { email = var.admin_email } }]
 }
 
 resource "cloudflare_zero_trust_access_policy" "bypass" {
