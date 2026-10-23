@@ -1,5 +1,10 @@
 # GCP-Site
 
+Reworked code, completly removing the need for hestiaCP. Host a basically free wordpress site on GCP. Thanks PHP vulnerability PHP2Shell ([CVE-2026-109618](https://www.cve.org/CVERecord?id=CVE-2026-109618), [CVE-2026-109619](https://www.cve.org/CVERecord?id=CVE-2026-109619)) for making me rethink my entire life's decisions.
+
+<details>
+<summary>Old HestiaCP setup</summary>
+
 This repo is designed to utilise the free compute VM that the GCP free tier offers. Following the instructions below create a VM in which HestiaCP can be installed. The infrastructure does not implement any features that would add unnecessary cost. Some costs cannot be avoided such as Egress/Ingress data to/from the VM (assuming free tier limits are exceeded), as well as a domain name which we can purchase from NameCheap.
 
 ## Requirements
@@ -52,6 +57,8 @@ Since we are using the VM as the nameserver we cannot use Namecheap's basic DNS,
 ![alt text](Images/ssl.png)
 
 22. Voilla you have now created a self-hosted and (mostly) free WordPress site (assuming you followed the steps properly and the steps I outlined are correct). Grab a coffee and wait for DNS changes to propagate. To login to your to the WordPress website you the address would be `https://your_domain/wp-login.php/`.
+
+</details>
 
 ## Licence
 This is sourced under the MIT License.

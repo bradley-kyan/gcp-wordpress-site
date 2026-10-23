@@ -5,15 +5,19 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~>6.33"
+      version = "6.50.0"
     }
     namecheap = {
       source  = "namecheap/namecheap"
-      version = ">= 2.0.0"
+      version = "2.9.4"
     }
     random = {
       source  = "hashicorp/random"
       version = "3.7.2"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "5.26.0"
     }
   }
 }
@@ -34,4 +38,8 @@ provider "namecheap" {
   api_user    = var.namecheap_user
   api_key     = var.namecheap_api_key
   use_sandbox = false
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }

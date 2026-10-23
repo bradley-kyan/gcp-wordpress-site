@@ -1,0 +1,92 @@
+#!/bin/bash
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
+
+data=/dev/disk/by-id/google-data
+blkid "$data" >/dev/null || { [ $? -eq 2 ] && [ -b "$data" ] && mkfs.ext4 -q -L wpdata "$data"; }
+grep -q '^LABEL=wpdata ' /etc/fstab || echo 'LABEL=wpdata /srv ext4 defaults,nofail 0 2' >> /etc/fstab
+mountpoint -q /srv || mount /srv
+
+if [ ! -f /swapfile ]; then
+  fallocate -l 1G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile
+  echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  echo 'vm.swappiness=10' > /etc/sysctl.d/90-swap.conf
+  sysctl --system >/dev/null
+fi
+swapon --show=NAME --noheadings | grep -qx /swapfile || swapon /swapfile
+
+if ! command -v docker >/dev/null; then
+  until apt-get update; do sleep 10; done
+  apt-get -o DPkg::Lock::Timeout=600 install -y --no-install-recommends docker.io docker-compose-v2 unattended-upgrades curl ca-certificates python3
+fi
+
+cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+cat > /etc/apt/apt.conf.d/52unattended-upgrades-local <<'EOF'
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+EOF
+
+install -d /etc/docker /etc/systemd/system/docker.service.d
+cat > /etc/docker/daemon.json <<'EOF'
+{ "dns": ["1.1.1.1", "8.8.8.8"], "log-driver": "local" }
+EOF
+cat > /etc/systemd/system/docker.service.d/block-metadata.conf <<'EOF'
+[Unit]
+RequiresMountsFor=/srv
+[Service]
+ExecStartPost=/bin/sh -c 'iptables -C DOCKER-USER -d 169.254.169.254/32 -j DROP 2>/dev/null || iptables -I DOCKER-USER -d 169.254.169.254/32 -j DROP'
+EOF
+
+%{ for path, f in files ~}
+install -D -m ${f.mode} /dev/null ${path}
+echo '${base64encode(f.content)}' | base64 -d > ${path}
+%{ endfor ~}
+
+cat > /etc/systemd/system/wp-backup.service <<'EOF'
+[Unit]
+Requires=docker.service
+After=docker.service google-startup-scripts.service
+[Service]
+Type=oneshot
+Environment=BUCKET=${bucket}
+ExecStart=/usr/local/sbin/wp-backup
+EOF
+cat > /etc/systemd/system/wp-backup.timer <<'EOF'
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl restart docker
+systemctl enable --now wp-backup.timer
+
+md() { curl -fsS --retry 5 -H 'Metadata-Flavor: Google' "http://169.254.169.254/computeMetadata/v1/$1"; }
+project=$(md project/project-id)
+token=$(md instance/service-accounts/default/token | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+secret() {
+  curl -fsS --retry 12 --retry-delay 10 --retry-all-errors -H "Authorization: Bearer $token" \
+    "https://secretmanager.googleapis.com/v1/projects/$project/secrets/$1/versions/latest:access" |
+    python3 -c 'import base64,json,sys; print(base64.b64decode(json.load(sys.stdin)["payload"]["data"]).decode())'
+}
+root_pw=$(secret mariadb-root-password)
+db_pw=$(secret wordpress-db-password)
+tunnel=$(secret cloudflared-token)
+
+umask 077
+install -d -m 700 /etc/wordpress
+printf 'MARIADB_ROOT_PASSWORD=%s\nMARIADB_PASSWORD=%s\n' "$root_pw" "$db_pw" > /etc/wordpress/mariadb.env
+printf 'WORDPRESS_DB_PASSWORD=%s\n' "$db_pw" > /etc/wordpress/wordpress.env
+printf 'TUNNEL_TOKEN=%s\n' "$tunnel" > /etc/wordpress/cloudflared.env
+umask 022
+
+install -d -m 755 /opt/wordpress/import /srv/wordpress
+docker compose -f /opt/wordpress/compose.yaml up -d --remove-orphans
