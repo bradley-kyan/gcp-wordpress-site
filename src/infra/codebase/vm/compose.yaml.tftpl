@@ -1,0 +1,74 @@
+name: wordpress
+
+x-wp-env: &wp-env
+  WORDPRESS_DB_HOST: mariadb
+  WORDPRESS_DB_NAME: wordpress
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_TABLE_PREFIX: wp_rRpDL_
+  WORDPRESS_CONFIG_EXTRA: |
+    define('WP_HOME', 'https://${domain}');
+    define('WP_SITEURL', 'https://${domain}');
+    define('FORCE_SSL_ADMIN', true);
+    define('DISALLOW_FILE_EDIT', true);
+    define('WP_AUTO_UPDATE_CORE', true);
+
+services:
+  mariadb:
+    image: mariadb:11.4.13-noble
+    restart: unless-stopped
+    command: ["--innodb-buffer-pool-size=64M", "--performance-schema=OFF", "--max-connections=30", "--skip-name-resolve"]
+    env_file: /etc/wordpress/mariadb.env
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_ROOT_HOST: localhost
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - /srv/wordpress/db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    mem_limit: 256m
+
+  wordpress:
+    image: wordpress:7.1.3-php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    env_file: /etc/wordpress/wordpress.env
+    environment: *wp-env
+    volumes:
+      - /srv/wordpress/html:/var/www/html
+      - ./apache.conf:/etc/apache2/conf-enabled/zz-site.conf:ro
+      - ./php.ini:/usr/local/etc/php/conf.d/zz-site.ini:ro
+    mem_limit: 384m
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.3
+    restart: unless-stopped
+    command: ["tunnel", "--metrics", "127.0.0.1:20241", "run", "--disable-path-normalization=false"]
+    env_file: /etc/wordpress/cloudflared.env
+    depends_on: [wordpress]
+    mem_limit: 128m
+
+  wpcli:
+    image: wordpress:cli-2.12.0-php8.3
+    profiles: [tools]
+    user: "33:33"
+    env_file: /etc/wordpress/wordpress.env
+    environment:
+      <<: *wp-env
+      HOME: /tmp
+    volumes:
+      - /srv/wordpress/html:/var/www/html
+      - ./import:/import:ro
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

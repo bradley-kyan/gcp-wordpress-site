@@ -17,9 +17,31 @@ variable "namecheap_user" {
 variable "namecheap_api_key" {
   description = "The Namecheap API key."
   type        = string
+  sensitive   = true
 }
 
 variable "website_domain" {
   description = "The domain name for the website."
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID owning the zone."
+  type        = string
+}
+
+variable "owner_email" {
+  description = "Destination for forwarded mail."
+  type        = string
+}
+
+variable "admin_email" {
+  description = "Cloudflare account email allowed through Cloudflare Access."
   type        = string
 }
